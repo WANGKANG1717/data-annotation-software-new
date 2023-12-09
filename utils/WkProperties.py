@@ -11,7 +11,7 @@ import os
 import traceback
 
 
-class Properties:
+class WkProperties:
     FILE_NOT_EXISTS = "文件不存在"
     INCORRECT_FORMAT = "格式有误"
     

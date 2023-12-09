@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QMessageBox, QMainWindow, QFileDialog
 
 from utils.dialog_text import *
 from utils.mainwindow import Ui_mainWindow
-from utils.translate import TranslateThread
+from utils.translate import TranslateThread, read_api
 
 
 class MainWindow(QMainWindow, Ui_mainWindow):
@@ -69,6 +69,13 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                                  QMessageBox.Yes)
             dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
             dialog.setIconPixmap(QPixmap())
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
+        if not read_api():
+            dialog = QMessageBox(QMessageBox.Warning, '警告',
+                                 f"读取翻译api失败，在线翻译功能将无法正常使用！",
+                                 QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
             dialog.button(QMessageBox.Yes).setText("确定")
             dialog.exec_()
     
