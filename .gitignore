@@ -8,3 +8,4 @@ dist
 test
 api.properties
 app.properties
+*.json

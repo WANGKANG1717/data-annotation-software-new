@@ -14,11 +14,12 @@ import random
 import traceback
 import time
 
-from utils.WkProperties import WkProperties
+from utils.WkProperties import Properties
 
 from PyQt5.QtCore import QThread, pyqtSignal
 
-property = WkProperties("./api.properties")
+property = Properties()
+property.parse_data("./api.properties")
 KEY = property.get("KEY")
 APPID = property.get("APPID")
 
