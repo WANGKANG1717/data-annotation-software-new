@@ -8,7 +8,7 @@
         <file>./icons/saveAs.png</file>
         <file>./icons/open.png</file>
         <file>./icons/prefanyi.png</file>
-        <file>./icons/logo.ico</file>
+<!--        <file>./icons/logo.ico</file>-->
         <file>./icons/logo_wk.ico</file>
     </qresource>
 </RCC>

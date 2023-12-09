@@ -39,6 +39,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.init_signal()
         #
         self.setWindowTitle('数据标注软件 By WANGKANG')
+        self.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
         self.setMinimumSize(800, 600)
         self.statusBar().showMessage('欢迎使用', 5000)  # 底部状态栏的提醒
         self.spinBox_current_index.setAlignment(Qt.AlignRight)
