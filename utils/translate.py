@@ -70,6 +70,32 @@ class TranslateThread(QThread):
         # self.parent.destroy_thread(self)
 
 
+class TranslateManyThread(QThread):
+    # 信号，触发信号，更新窗体中的数据
+    prefanyi_progress_signal = pyqtSignal(int)
+    finish_prefanyi_signal = pyqtSignal(dict, str, QThread)
+    
+    def __init__(self, data_list: list[str], *args, **kwargs):
+        # 本来这里是传入父组件，通过调用父组件中的destory_thread摧毁线程，但是这种方法不够安全，于是被抛弃
+        super().__init__(*args, **kwargs)
+        self.data_list = data_list
+        self.total_len = len(data_list)
+    
+    def run(self):
+        try:
+            pre_fanyi_data = {}
+            for idx, text in enumerate(self.data_list):
+                msg = translate_en2zh(text)
+                if msg == 'Invalid Access Limit':
+                    msg = '请求过于频繁，请稍后再试！'
+                self.prefanyi_progress_signal.emit(int(((idx + 1) / self.total_len) * 100))
+                pre_fanyi_data.update({text: msg})
+            self.finish_prefanyi_signal.emit(pre_fanyi_data, "预翻译成功！", self)
+        except:
+            self.finish_prefanyi_signal.emit(pre_fanyi_data, f"出现未知异常！\n{traceback.format_exc()}", self)
+            print(traceback.format_exc())
+
+
 def translate_en2zh(text):
     def md5(data):
         # appid + q + salt + 密钥

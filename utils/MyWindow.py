@@ -10,13 +10,13 @@ import os.path
 import traceback
 
 import pandas as pd
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QMessageBox, QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QMessageBox, QMainWindow, QFileDialog, QProgressBar, QLabel
 
 from utils.dialog_text import *
 from utils.mainwindow import Ui_mainWindow
-from utils.translate import TranslateThread, read_api
+from utils.translate import TranslateThread, read_api, TranslateManyThread
 
 
 class MainWindow(QMainWindow, Ui_mainWindow):
@@ -37,15 +37,12 @@ class MainWindow(QMainWindow, Ui_mainWindow):
     # 初始化ui
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        
         self.setupUi(self)
         self.init_signal()
         #
-        self.setWindowTitle(self.APP_NAME)
-        self.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
-        self.setMinimumSize(800, 600)
-        self.statusBar().showMessage('欢迎使用', 5000)  # 底部状态栏的提醒
-        self.spinBox_current_index.setAlignment(Qt.AlignRight)
+        self.progressLabel = None
+        self.progressBar = None
+        self.init_ui()
         #
         self.file_path = ''  # 文件路径
         self.excel_data = pd.DataFrame()  # 总的excel信息
@@ -81,6 +78,23 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
             dialog.button(QMessageBox.Yes).setText("确定")
             dialog.exec_()
+    
+    def init_ui(self):
+        self.setWindowTitle(self.APP_NAME)
+        self.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+        self.setMinimumSize(800, 600)
+        self.statusBar().showMessage('欢迎使用', 5000)  # 底部状态栏的提醒
+        self.spinBox_current_index.setAlignment(Qt.AlignRight)
+        self.progressBar = QProgressBar()
+        self.progressLabel = QLabel("")
+        self.progressBar.setMaximumWidth(200)
+        self.progressBar.setMaximumHeight(17)
+        # self.statusBar().addWidget(progressLabel) # 添加到状态栏的左边
+        # self.statusBar().ddWidget(progressBar)
+        self.statusBar().addPermanentWidget(self.progressLabel)  # 添加到状态栏的右边
+        self.statusBar().addPermanentWidget(self.progressBar)
+        self.progressBar.setVisible(False)
+        self.progressLabel.setVisible(False)
     
     def init_params(self):
         self.current_index = 0
@@ -219,6 +233,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         else:
             file_name = self.file_path.rsplit('/', 1)[1]
             self.setWindowTitle(f"{'*' if not self.already_save_file else ''}{self.APP_NAME} - {file_name}")
+    
     def open_file(self):
         print("open_file")
         try:
@@ -275,16 +290,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             QMessageBox.critical(self, "错误", "文件保存失败，请检查是否有其他软件正在使用文件！")
             self.set_status_bar_msg("文件保存失败")
         
-        try:
-            self.save_fanyi_data()
-        except Exception as e:
-            dialog = QMessageBox(QMessageBox.Critical, '错误',
-                                 f"保存翻译数据失败！可能是权限不足，请检查！\n{traceback.format_exc()}",
-                                 QMessageBox.Yes)
-            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
-            dialog.setIconPixmap(QPixmap())
-            dialog.button(QMessageBox.Yes).setText("确定")
-            dialog.exec_()
+        self.save_fanyi_data()
     
     def saveAs_file(self):
         if not self.file_path:
@@ -521,14 +527,23 @@ class MainWindow(QMainWindow, Ui_mainWindow):
     
     def save_fanyi_data(self):
         print("save_fanyi_data")
-        fanyi_data = {}
-        if os.path.exists("./translate_map_content_fanyi.json"):
-            with open(self.FANYI_FILE_PATH, "r", encoding="utf-8") as f:
-                fanyi_data = json.load(f)
-        fanyi_data.update(self.translate_map_content_fanyi)
-        with open(self.FANYI_FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(fanyi_data, f)
-        # print(self.translate_map_content_fanyi)
+        try:
+            fanyi_data = {}
+            if os.path.exists("./translate_map_content_fanyi.json"):
+                with open(self.FANYI_FILE_PATH, "r", encoding="utf-8") as f:
+                    fanyi_data = json.load(f)
+            fanyi_data.update(self.translate_map_content_fanyi)
+            with open(self.FANYI_FILE_PATH, "w", encoding="utf-8") as f:
+                json.dump(fanyi_data, f)
+            # print(self.translate_map_content_fanyi)
+        except Exception as e:
+            dialog = QMessageBox(QMessageBox.Critical, '错误',
+                                 f"保存翻译数据失败！可能是权限不足，请检查！\n{traceback.format_exc()}",
+                                 QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+            dialog.setIconPixmap(QPixmap())
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
     
     def read_fanyi_data(self):
         print("read_fanyi_data")
@@ -587,9 +602,9 @@ class MainWindow(QMainWindow, Ui_mainWindow):
     
     # 预翻译所有文章，问题、答案，这样可以拿到结果后，供后面所有人使用
     def prefanyi(self):
+        print("prefanyi")
         if not self.file_path:
             return
-        self.disable_or_enable_components(True)
         # 用来存储需要翻译的所有数据
         all_data = []
         for index in range(self.data_size):
@@ -603,6 +618,13 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         print("总共需要翻译的数据长度为：", len(all_data))
         char_length = len("".join(all_data))
         print(char_length)
+        if len(all_data) == 0:
+            dialog = QMessageBox(QMessageBox.Question, '提示', "所有翻译数据皆已缓存，无需翻译！", QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+            # dialog.setIconPixmap(QPixmap())
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
+            return
         dialog = QMessageBox(QMessageBox.Question, '提示',
                              f'本次预翻译，共{len(all_data)}条数据，总字符为{char_length}。\n预翻译将会一次性翻译完打开文档中的所有英文文本，会消耗大量api翻译额度，可能会占用较长时间，是否继续？',
                              QMessageBox.Yes | QMessageBox.No)
@@ -612,6 +634,52 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         dialog.button(QMessageBox.No).setText("取消")
         answer = dialog.exec_()
         if answer == QMessageBox.Yes:
-            pass
-        
+            self.disable_or_enable_components(True)
+            self.progressLabel.setText("请稍等...")
+            self.progressBar.setRange(0, 100)
+            self.progressBar.setValue(0)
+            self.progressBar.setVisible(True)
+            self.progressLabel.setVisible(True)
+            self.prefanyi_main(all_data)
+    
+    def prefanyi_main(self, data_list):
+        print("prefanyi_main")
+        new_thread = TranslateManyThread(data_list)
+        new_thread.prefanyi_progress_signal.connect(self.update_prefanyi_progress_to_ui)
+        new_thread.finish_prefanyi_signal.connect(self.finish_prefanyi)
+        self.translate_threads.append(new_thread)  # 向线程队列中添加线程
+        new_thread.start()
+    
+    def update_prefanyi_progress_to_ui(self, progress: int):
+        print("update_prefanyi_progress_to_ui")
+        print(progress)
+        self.progressBar.setValue(progress)
+    
+    def finish_prefanyi(self, prefanyi_data: dict, msg: str, thread):
+        print("finish_prefanyi")
+        print(prefanyi_data)
+        self.translate_map_content_fanyi.update(prefanyi_data)
+        # self.progressLabel.setText(msg)
+        # 这里要过一会发信号让状态栏里面的组件消失
+        self.hide_progressBar()
+        self.remove_thread(thread)
+        self.save_fanyi_data()
         self.disable_or_enable_components(False)
+        
+        if "成功" in msg:
+            self.progressLabel.setText("预翻译完成")
+            dialog = QMessageBox(QMessageBox.Information, '提示', msg, QMessageBox.Yes)
+        else:
+            self.progressLabel.setText("预翻译失败")
+            dialog = QMessageBox(QMessageBox.Critical, '错误', msg, QMessageBox.Yes)
+        dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+        # dialog.setIconPixmap(QPixmap())
+        dialog.button(QMessageBox.Yes).setText("确定")
+        dialog.exec_()
+    
+    def hide_progressBar(self):
+        timer = QTimer(self)
+        timer.start(5000)
+        timer.timeout.connect(lambda: self.progressLabel.setVisible(False))
+        timer.timeout.connect(lambda: self.progressBar.setVisible(False))
+        timer.start()
