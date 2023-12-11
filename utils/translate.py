@@ -17,7 +17,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 from utils.WkProperties import WkProperties
 
-KEY = '',
+KEY = ''
 APPID = ''
 
 
@@ -34,6 +34,15 @@ def read_api():
             return True
     except:
         return False
+
+
+def save_api(key, appid):
+    global KEY, APPID
+    KEY = key
+    APPID = appid
+    property = WkProperties()
+    property.update({'KEY': key, 'APPID': appid})
+    return property.save_data('./api.properties')
 
 
 # 翻译线程

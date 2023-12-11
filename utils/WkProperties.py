@@ -47,16 +47,19 @@ class WkProperties:
         """
         保存数据，这里可以考虑添加保存文件时的方式：追加/覆盖
         :param filepath: 保存文件路径
+        :return True: 保存成功  False: 保存失败
         """
         if not filepath:
-            return
+            return True
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write("# WkProperties created by WANGKANG\n")
                 for key, data in self.key_value.items():
                     f.write(f"{key} = {data}\n")
+            return True
         except:
             print("文件保存失败：", traceback.format_exc())
+            return False
     
     def get(self, key):
         return self.key_value.get(key)
@@ -82,7 +85,7 @@ class WkProperties:
 
 if __name__ == "__main__":
     path = "./application.properties"
-    property = Properties()
+    property = WkProperties()
     property.parse_data(path)
     print(property.get("KEY"))
     print(property.get("APPID"))

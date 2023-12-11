@@ -11,5 +11,6 @@
 <!--        <file>./icons/logo.ico</file>-->
         <file>./icons/logo_wk.ico</file>
         <file>./icons/close.png</file>
+        <file>./icons/setting.png</file>
     </qresource>
 </RCC>

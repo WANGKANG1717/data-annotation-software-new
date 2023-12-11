@@ -785,6 +785,7 @@ QSpinBox::up-button,QSpinBox::down-button
     <addaction name="action_save"/>
     <addaction name="action_saveAs"/>
     <addaction name="action_prefanyi"/>
+    <addaction name="action_setting"/>
     <addaction name="separator"/>
     <addaction name="action_exit"/>
    </widget>
@@ -883,6 +884,15 @@ QSpinBox::up-button,QSpinBox::down-button
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="action_setting">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/setting.png</normaloff>:/icons/setting.png</iconset>
+   </property>
+   <property name="text">
+    <string>设置</string>
    </property>
   </action>
  </widget>

@@ -14,9 +14,10 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QMessageBox, QMainWindow, QFileDialog, QProgressBar, QLabel
 
+from utils.SettingWindow import SettingWindow
 from utils.dialog_text import *
 from utils.mainwindow import Ui_mainWindow
-from utils.translate import TranslateThread, read_api, TranslateManyThread
+from utils.translate import TranslateThread, read_api, TranslateManyThread, save_api
 
 
 class MainWindow(QMainWindow, Ui_mainWindow):
@@ -25,7 +26,8 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         '出现未知异常！',
         '请求过于频繁，请稍后再试！',
     ]
-    FANYI_FILE_PATH = "./translate_map_content_fanyi.json"
+    
+    FANYI_FILE_PATH = os.path.join(os.getcwd(), "translate_map_content_fanyi.json")
     
     COMBOBOX_TAGS = ['fluency', 'clarity', 'concise', 'relevance',
                      'consistency', 'answerability', 'answer_consistency', 'acceptance'
@@ -42,6 +44,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         #
         self.progressLabel = None
         self.progressBar = None
+        self.settingWindow = None
         self.init_ui()
         #
         self.file_path = ''  # 文件路径
@@ -60,24 +63,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.already_save_file = True  # 方便退出脚本
         #
         self.disable_or_enable_components(True)  # 一开始需要禁用按钮 等到打开文件后再开启按钮
-        
-        try:
-            self.read_fanyi_data()
-        except Exception as e:
-            dialog = QMessageBox(QMessageBox.Critical, '错误',
-                                 f"读取翻译数据失败！\n{traceback.format_exc()}",
-                                 QMessageBox.Yes)
-            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
-            dialog.setIconPixmap(QPixmap())
-            dialog.button(QMessageBox.Yes).setText("确定")
-            dialog.exec_()
-        if not read_api():
-            dialog = QMessageBox(QMessageBox.Warning, '警告',
-                                 f"读取翻译api失败，在线翻译功能将无法正常使用！",
-                                 QMessageBox.Yes)
-            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
-            dialog.button(QMessageBox.Yes).setText("确定")
-            dialog.exec_()
+        self.read_data_delay_1s()
     
     def init_ui(self):
         self.setWindowTitle(self.APP_NAME)
@@ -182,6 +168,8 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.comboBox_answer_consistency.currentTextChanged.connect(
             lambda: self.change_comboBox("answer_consistency"))
         self.comboBox_acceptance.currentTextChanged.connect(lambda: self.change_comboBox("acceptance"))
+        # 设置窗口
+        self.action_setting.triggered.connect(self.show_setting_window)
     
     def block_signals(self, flag):
         # 有时候因为信号的原因，可能会导致一些异常的操作，所以在进行交大幅度的修改时，需要屏蔽信号
@@ -529,7 +517,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         print("save_fanyi_data")
         try:
             fanyi_data = {}
-            if os.path.exists("./translate_map_content_fanyi.json"):
+            if os.path.exists(self.FANYI_FILE_PATH):
                 with open(self.FANYI_FILE_PATH, "r", encoding="utf-8") as f:
                     fanyi_data = json.load(f)
             fanyi_data.update(self.translate_map_content_fanyi)
@@ -545,12 +533,50 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             dialog.button(QMessageBox.Yes).setText("确定")
             dialog.exec_()
     
+    def read_data_delay_1s(self):
+        timer = QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(lambda: self.read_api2())
+        timer.timeout.connect(lambda:self.read_fanyi_file_path())
+        # timer.timeout.connect(lambda: self.read_fanyi_data())
+        timer.start(1000)
+    
+    def read_api2(self):
+        print("read_api2")
+        if not read_api():
+            dialog = QMessageBox(QMessageBox.Warning, '警告',
+                                 f"读取翻译api失败，在线翻译功能将无法正常使用！",
+                                 QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
+    
+    def save_api2(self, key, appid):
+        print("save_api2")
+        flag = save_api(key, appid)
+        if flag:
+            dialog = QMessageBox(QMessageBox.Information, '提醒', "保存成功！", QMessageBox.Yes)
+        else:
+            dialog = QMessageBox(QMessageBox.Critical, '提醒', "保存失败，可能是权限不足！", QMessageBox.Yes)
+        dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+        dialog.button(QMessageBox.Yes).setText("确定")
+        dialog.exec_()
+    
     def read_fanyi_data(self):
         print("read_fanyi_data")
-        if os.path.exists("./translate_map_content_fanyi.json"):
-            with open(self.FANYI_FILE_PATH, "r", encoding="utf-8") as f:
-                self.translate_map_content_fanyi = json.load(f)
-        # print(self.translate_map_content_fanyi)
+        try:
+            if os.path.exists(self.FANYI_FILE_PATH):
+                with open(self.FANYI_FILE_PATH, "r", encoding="utf-8") as f:
+                    self.translate_map_content_fanyi = json.load(f)
+            # print(self.translate_map_content_fanyi)
+        except Exception as e:
+            dialog = QMessageBox(QMessageBox.Critical, '错误',
+                                 f"读取翻译数据失败！\n{traceback.format_exc()}",
+                                 QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+            dialog.setIconPixmap(QPixmap())
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
     
     def read_set_comboBox(self):
         print('read_set_comboBox')
@@ -679,7 +705,52 @@ class MainWindow(QMainWindow, Ui_mainWindow):
     
     def hide_progressBar(self):
         timer = QTimer(self)
-        timer.start(5000)
+        timer.setSingleShot(True)
         timer.timeout.connect(lambda: self.progressLabel.setVisible(False))
         timer.timeout.connect(lambda: self.progressBar.setVisible(False))
-        timer.start()
+        timer.start(5000)
+    
+    def show_setting_window(self):
+        self.settingWindow = SettingWindow(self)
+        self.settingWindow.setWindowModality(Qt.ApplicationModal)
+        self.settingWindow.show()
+    
+    def read_fanyi_file_path(self):
+        print("read_fanyi_file_path")
+        try:
+            if os.path.exists("./fanyi_file_path.txt"):
+                with open("fanyi_file_path.txt", 'r', encoding='utf-8') as f:
+                    path = f.read().strip()
+                self.FANYI_FILE_PATH = path
+                self.read_fanyi_data()
+        except:
+            self.reset_fanyi_file_path()
+            dialog = QMessageBox(QMessageBox.Critical, '错误', "获取翻译文件位置失败！", QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+            # dialog.setIconPixmap(QPixmap())
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
+    
+    def save_fanyi_file_path(self, path):
+        print("save_fanyi_file_path")
+        try:
+            with open("fanyi_file_path.txt", 'w', encoding='utf-8') as f:
+                f.write(path)
+            self.FANYI_FILE_PATH = path
+            dialog = QMessageBox(QMessageBox.Information, '提醒', "保存翻译文件位置成功！", QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
+            
+            self.read_fanyi_data()
+        except:
+            self.reset_fanyi_file_path()
+            dialog = QMessageBox(QMessageBox.Critical, '错误', "保存翻译文件位置失败！", QMessageBox.Yes)
+            dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+            # dialog.setIconPixmap(QPixmap())
+            dialog.button(QMessageBox.Yes).setText("确定")
+            dialog.exec_()
+    
+    def reset_fanyi_file_path(self):
+        path = os.path.join(os.getcwd(), "translate_map_content_fanyi.json")
+        self.save_fanyi_file_path(path)
