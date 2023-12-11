@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_mainWindow(object):
     def setupUi(self, mainWindow):
         mainWindow.setObjectName("mainWindow")
-        mainWindow.resize(860, 600)
+        mainWindow.resize(866, 632)
         self.centralwidget = QtWidgets.QWidget(mainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.centralwidget)
@@ -281,7 +281,7 @@ class Ui_mainWindow(object):
         self.statusbar.setObjectName("statusbar")
         mainWindow.setStatusBar(self.statusbar)
         self.menuBar = QtWidgets.QMenuBar(mainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 860, 22))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 866, 22))
         self.menuBar.setObjectName("menuBar")
         self.menu = QtWidgets.QMenu(self.menuBar)
         self.menu.setObjectName("menu")
@@ -323,7 +323,13 @@ class Ui_mainWindow(object):
         icon6.addPixmap(QtGui.QPixmap(":/icons/prefanyi.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.action_prefanyi.setIcon(icon6)
         self.action_prefanyi.setObjectName("action_prefanyi")
+        self.action_close = QtWidgets.QAction(mainWindow)
+        icon7 = QtGui.QIcon()
+        icon7.addPixmap(QtGui.QPixmap(":/icons/close.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.action_close.setIcon(icon7)
+        self.action_close.setObjectName("action_close")
         self.menu.addAction(self.action_open)
+        self.menu.addAction(self.action_close)
         self.menu.addAction(self.action_save)
         self.menu.addAction(self.action_saveAs)
         self.menu.addAction(self.action_prefanyi)
@@ -407,4 +413,6 @@ class Ui_mainWindow(object):
         self.action_save.setText(_translate("mainWindow", "保存"))
         self.action_save.setShortcut(_translate("mainWindow", "Ctrl+S"))
         self.action_prefanyi.setText(_translate("mainWindow", "预翻译"))
+        self.action_close.setText(_translate("mainWindow", "关闭"))
+        self.action_close.setShortcut(_translate("mainWindow", "Ctrl+W"))
 import utils.icons_rc

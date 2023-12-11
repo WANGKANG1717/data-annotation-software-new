@@ -39,14 +39,15 @@ def read_api():
 # 翻译线程
 class TranslateThread(QThread):
     # 信号，触发信号，更新窗体中的数据
-    translate_signal = pyqtSignal(str, str, int)
+    translate_signal = pyqtSignal(str, str, int, QThread)
     
-    def __init__(self, text, param, index, parent, *args, **kwargs):
+    def __init__(self, text, param, index, *args, **kwargs):
+        # 本来这里是传入父组件，通过调用父组件中的destory_thread摧毁线程，但是这种方法不够安全，于是被抛弃
         super().__init__(*args, **kwargs)
         self.text = text
         self.param = param
         self.index = index
-        self.parent = parent
+        # self.parent = parent
     
     def run(self):
         try:
@@ -54,7 +55,7 @@ class TranslateThread(QThread):
             msg = translate_en2zh(self.text)
             if msg == 'Invalid Access Limit':
                 msg = '请求过于频繁，请稍后再试！'
-            self.translate_signal.emit(msg, self.param, self.index)
+            self.translate_signal.emit(msg, self.param, self.index, self)
         # 本来这里有一个请求频繁就会自动重新请求的机制，后面我发现了更好的方式，就取消了
         # if msg != 'Invalid Access Limit':
         # 	break
@@ -62,11 +63,11 @@ class TranslateThread(QThread):
         # 	time.sleep(random.randint(0, 5))
         # print(msg)
         except:
-            self.translate_signal.emit("出现未知异常！", self.param, self.index)
+            self.translate_signal.emit("出现未知异常！", self.param, self.index, self)
             print(traceback.format_exc())
         
         # 线程结束后，需要动态的移除此线程发，以免占用太多的系统资源
-        self.parent.destroy_thread(self)
+        # self.parent.destroy_thread(self)
 
 
 def translate_en2zh(text):

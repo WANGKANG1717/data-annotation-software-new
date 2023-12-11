@@ -20,6 +20,7 @@ from utils.translate import TranslateThread, read_api
 
 
 class MainWindow(QMainWindow, Ui_mainWindow):
+    APP_NAME = '数据标注软件 By WANGKANG'
     ERROR_TRANSLATE = [
         '出现未知异常！',
         '请求过于频繁，请稍后再试！',
@@ -31,6 +32,8 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                      ]
     COMBOBOX_MAX_INDEX = 3  # 最大下标
     
+    TAGS = ['passage', 'prediction', 'answer']
+    
     # 初始化ui
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -38,7 +41,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.setupUi(self)
         self.init_signal()
         #
-        self.setWindowTitle('数据标注软件 By WANGKANG')
+        self.setWindowTitle(self.APP_NAME)
         self.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
         self.setMinimumSize(800, 600)
         self.statusBar().showMessage('欢迎使用', 5000)  # 底部状态栏的提醒
@@ -55,7 +58,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.answer_auto_translate = False
         self.prediction_auto_translate = False
         #
-        self.translate_threads = []  # 翻译线程队列
+        self.translate_threads = []  # 翻译线程队列 # 翻译队列不需要经常重置
         #
         self.already_save_file = True  # 方便退出脚本
         #
@@ -83,12 +86,17 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.current_index = 0
         self.data_size = len(self.excel_data['id'])
         # self.translate_map_content_fanyi = {}  # 用来记录已经翻译的文章，避免每次都要翻译，浪费算力
-        self.translate_threads = []  # 翻译线程队列
+        # self.translate_threads = []  # 翻译线程队列
     
     #
     def disable_or_enable_components(self, flag):
+        print('disable_or_enable_components')
         self.pushButton_next.setDisabled(flag)
         self.pushButton_pre.setDisabled(flag)
+        #
+        self.textBrowser_passage.setDisabled(flag)
+        self.textBrowser_answer.setDisabled(flag)
+        self.textBrowser_prediction.setDisabled(flag)
         #
         self.pushButton_passage_source.setDisabled(flag)
         self.pushButton_prediction_source.setDisabled(flag)
@@ -108,7 +116,14 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.lineEdit_search.setDisabled(flag)
         self.pushButton_search.setDisabled(flag)
         #
+        self.spinBox_current_index.blockSignals(True)
         self.spinBox_current_index.setDisabled(flag)
+        self.spinBox_current_index.blockSignals(False)
+        # 关闭文件信号
+        self.action_close.setDisabled(flag)
+        self.action_save.setDisabled(flag)
+        self.action_saveAs.setDisabled(flag)
+        self.action_prefanyi.setDisabled(flag)
     
     #
     # # 信号与槽的设置
@@ -139,18 +154,73 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.pushButton_search.clicked.connect(self.search)
         #
         self.spinBox_current_index.editingFinished.connect(self.jump_to_target_page)
-        # 设置comboBox信号
+        #
+        self.action_prefanyi.triggered.connect(self.prefanyi)
+        #
+        self.action_close.triggered.connect(self.close_file)
+        #
         self.comboBox_fluency.currentTextChanged.connect(lambda: self.change_comboBox("fluency"))
         self.comboBox_clarity.currentTextChanged.connect(lambda: self.change_comboBox("clarity"))
         self.comboBox_concise.currentTextChanged.connect(lambda: self.change_comboBox("concise"))
         self.comboBox_relevance.currentTextChanged.connect(lambda: self.change_comboBox("relevance"))
         self.comboBox_consistency.currentTextChanged.connect(lambda: self.change_comboBox("consistency"))
         self.comboBox_answerability.currentTextChanged.connect(lambda: self.change_comboBox("answerability"))
-        self.comboBox_answer_consistency.currentTextChanged.connect(lambda: self.change_comboBox("answer_consistency"))
+        self.comboBox_answer_consistency.currentTextChanged.connect(
+            lambda: self.change_comboBox("answer_consistency"))
         self.comboBox_acceptance.currentTextChanged.connect(lambda: self.change_comboBox("acceptance"))
     
+    def block_signals(self, flag):
+        # 有时候因为信号的原因，可能会导致一些异常的操作，所以在进行交大幅度的修改时，需要屏蔽信号
+        # 结果发信时spinBox的信号触发问题，最后还是在函数里面手动阻塞信号才解决这个问题，有点无语
+        print("block_signals")
+        self.action_open.blockSignals(flag)
+        self.pushButton_next.blockSignals(flag)
+        self.pushButton_pre.blockSignals(flag)
+        self.action_save.blockSignals(flag)
+        #
+        self.pushButton_passage_translate.blockSignals(flag)
+        self.pushButton_prediction_translate.blockSignals(flag)
+        self.pushButton_answer_translate.blockSignals(flag)
+        #
+        self.pushButton_passage_source.blockSignals(flag)
+        self.pushButton_prediction_source.blockSignals(flag)
+        self.pushButton_answer_source.blockSignals(flag)
+        #
+        self.checkBox_passage_auto_translate.blockSignals(flag)
+        self.checkBox_prediction_auto_translate.blockSignals(flag)
+        self.checkBox_answer_auto_translate.blockSignals(flag)
+        #
+        self.action_saveAs.blockSignals(flag)
+        self.action_exit.blockSignals(flag)
+        #
+        self.action_about.blockSignals(flag)
+        self.action_help.blockSignals(flag)
+        #
+        self.pushButton_search.blockSignals(flag)
+        #
+        self.spinBox_current_index.blockSignals(flag)
+        #
+        self.action_prefanyi.blockSignals(flag)
+        #
+        self.action_close.blockSignals(flag)
+        #
+        self.comboBox_fluency.blockSignals(flag)
+        self.comboBox_clarity.blockSignals(flag)
+        self.comboBox_concise.blockSignals(flag)
+        self.comboBox_relevance.blockSignals(flag)
+        self.comboBox_consistency.blockSignals(flag)
+        self.comboBox_answerability.blockSignals(flag)
+        self.comboBox_answer_consistency.blockSignals(flag)
+        self.comboBox_acceptance.blockSignals(flag)
+    
+    def set_window_title(self):
+        if not self.file_path:
+            self.setWindowTitle(f"{'*' if not self.already_save_file else ''}{self.APP_NAME}")
+        else:
+            file_name = self.file_path.rsplit('/', 1)[1]
+            self.setWindowTitle(f"{'*' if not self.already_save_file else ''}{self.APP_NAME} - {file_name}")
     def open_file(self):
-        # print("open_file")
+        print("open_file")
         try:
             path = QFileDialog.getOpenFileName(self, 'open')[0]
             if path:
@@ -158,12 +228,41 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 self.file_path = path
                 self.set_status_bar_msg("打开成功 " + path)
                 self.init_component()
+                # print(self.file_path)
+                self.set_window_title()
         except:
             print(traceback.format_exc())
             QMessageBox.critical(self, "错误", f"文件打开失败，请检查文件内容是否正常！\n{traceback.format_exc()}")
             self.set_status_bar_msg("文件打开失败！")
     
-    #
+    def close_file(self):
+        print("close_file")
+        '''
+        这里有一个奇怪的bug，如果点击下一页，然后直接ctrl+w关闭文件，会直接报错，不知到什么原因，不过被我用异常处理搞定了
+        后面如果有时间还是得好好研究一下
+        '''
+        try:
+            # self.block_signals(True)
+            if not self.already_save_file:
+                answer = self.save_or_not_dialog()
+                if answer == QMessageBox.Save:
+                    self.save_file()
+                elif answer == QMessageBox.Cancel:
+                    return
+            self.file_path = ''  # 文件路径
+            self.excel_data = pd.DataFrame()  # 总的excel信息
+            self.data_size = 0  # 数据集大小
+            self.current_index = 0  # 当前文章/问题下标
+            self.already_save_file = True
+            self.reset_textBrowser_or_other()
+            self.reset_comboBox()
+            self.reset_progress()
+            self.set_window_title()
+            self.disable_or_enable_components(True)
+        except:
+            print(traceback.format_exc())
+        # self.block_signals(False)
+    
     def save_file(self):
         if not self.file_path:
             return
@@ -171,6 +270,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             self.excel_data.to_excel(self.file_path, index=False)
             self.set_status_bar_msg("文件保存成功")
             self.already_save_file = True
+            self.set_window_title()
         except Exception as e:
             QMessageBox.critical(self, "错误", "文件保存失败，请检查是否有其他软件正在使用文件！")
             self.set_status_bar_msg("文件保存失败")
@@ -199,20 +299,21 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.disable_or_enable_components(False)
         self.get_set_ui_from_source()
     
-    #
     def set_status_bar_msg(self, msg, timeout=5000):
         self.statusBar().showMessage(msg, timeout)
     
-    #
     def get_set_text_to_ui(self, key):
         config = vars(self)
-        text = self.excel_data.loc[self.current_index, key]
+        try:
+            text = self.excel_data.loc[self.current_index, key]
+        except:
+            text = ""
+            # print(traceback.format_exc())
         config[f"textBrowser_{key}"].setText(text)
     
     def get_document_id(self):
         return self.excel_data.loc[self.current_index, 'id'].strip()
     
-    #
     def next_passage_prediction(self):
         if self.current_index < self.data_size - 1:
             self.current_index += 1
@@ -220,7 +321,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         else:
             QMessageBox.warning(self, "警告", "已经是最后一个问题！")
     
-    #
     def pre_passage_prediction(self):
         if self.current_index > 0:
             self.current_index -= 1
@@ -229,21 +329,27 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             QMessageBox.warning(self, "警告", "已经是第一个问题！")
     
     def get_column_text(self, column_name):
-        obj = self.excel_data.loc[self.current_index, column_name]
-        # print(type(obj))
-        if pd.isna(obj):
-            return ""
-        else:
-            return str(obj).strip()
+        try:
+            obj = self.excel_data.loc[self.current_index, column_name]
+            # print(type(obj))
+            if pd.isna(obj):
+                return ""
+            else:
+                return str(obj).strip()
+        except:
+            return ''
     
     def get_data_from_excel(self, key, index=None):
-        if not index:
-            return self.excel_data.loc[self.current_index, key]
-        else:
-            return self.excel_data.loc[index, key]
+        try:
+            if not index:
+                return self.excel_data.loc[self.current_index, key]
+            else:
+                return self.excel_data.loc[index, key]
+        except:
+            return ""
     
     def get_set_ui_from_source(self):
-        self.already_save_file = False
+        print("get_set_ui_from_source")
         self.get_set_text_to_ui("passage")
         self.get_set_text_to_ui("answer")
         self.get_set_text_to_ui("prediction")
@@ -266,8 +372,11 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.init_progress()
     
     def translate(self, param):
+        print("translate")
         # todo 不知到为什么，明明可以拿到数据，但是死活没法识别
         config = vars(self)
+        if not config[f'textBrowser_{param}'].isEnabled():
+            return
         config[f'pushButton_{param}_translate'].setDisabled(True)
         config[f'pushButton_{param}_source'].setDisabled(False)
         if self.translate_map_content_fanyi.get(self.get_data_from_excel(param)) is not None:
@@ -275,29 +384,45 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 self.translate_map_content_fanyi.get(self.get_data_from_excel(param)))
             return
         
-        new_thread = TranslateThread(self.get_column_text(param), param, self.current_index, self)
+        new_thread = TranslateThread(self.get_column_text(param), param, self.current_index)
         new_thread.translate_signal.connect(self.update_translate_to_ui)
-        new_thread.start()
-        
         self.translate_threads.append(new_thread)  # 向线程队列中添加线程
+        new_thread.start()
     
-    #
-    def destroy_thread(self, thread):
-        self.translate_threads.remove(thread)
-        # print(f"已经移除线程{thread}")
-        # print(self.translate_threads)
+    def remove_thread(self, thread):
+        '''这里的摧毁线程没有用到，需要优化'''
+        print(self.translate_threads)
+        if thread in self.translate_threads:
+            self.translate_threads.remove(thread)
+            print(f"已经移除线程{thread}")
     
-    def update_translate_to_ui(self, translate_text, param, index):
-        self.set_status_bar_msg("翻译完成")
-        
-        config = vars(self)
-        config[f'pushButton_{param}_translate'].setDisabled(True)
-        config[f'pushButton_{param}_source'].setDisabled(False)
-        config[f'textBrowser_{param}'].setText(translate_text)
-        if translate_text not in self.ERROR_TRANSLATE:
-            self.translate_map_content_fanyi[self.get_data_from_excel(param, index)] = translate_text
+    def destroy_all_thread(self):
+        # 暂时用不到
+        for thread in self.translate_threads:
+            thread.exit(0)
+    
+    def update_translate_to_ui(self, translate_text, param, index, thread):
+        try:
+            config = vars(self)
+            self.set_status_bar_msg("翻译完成")
+            self.remove_thread(thread)
+            
+            if not config[f'textBrowser_{param}'].isEnabled():
+                return
+            config[f'pushButton_{param}_translate'].setDisabled(True)
+            config[f'pushButton_{param}_source'].setDisabled(False)
+            if self.current_index == index:
+                config[f'textBrowser_{param}'].setText(translate_text)
+            if translate_text not in self.ERROR_TRANSLATE:
+                self.translate_map_content_fanyi[self.get_data_from_excel(param, index)] = translate_text
+        except:
+            print(traceback.format_exc())
     
     def to_source(self, param):
+        print("to_source")
+        config = vars(self)
+        if not config[f'textBrowser_{param}'].isEnabled():
+            return
         if param == "passage":
             self.pushButton_passage_translate.setDisabled(False)
             self.pushButton_passage_source.setDisabled(True)
@@ -320,10 +445,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             self.answer_auto_translate = self.checkBox_answer_auto_translate.isChecked()
         self.translate(param)
     
-    #
-    def closeEvent(self, e):
-        if self.file_path == "" or self.already_save_file:
-            return
+    def save_or_not_dialog(self):
         dialog = QMessageBox(QMessageBox.Question, '提示', '关闭之前是否保存文件',
                              QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
         dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
@@ -331,7 +453,12 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         dialog.button(QMessageBox.Save).setText("保存")
         dialog.button(QMessageBox.Discard).setText("放弃")
         dialog.button(QMessageBox.Cancel).setText("取消")
-        answer = dialog.exec_()
+        return dialog.exec_()
+    
+    def closeEvent(self, e):
+        if self.file_path == "" or self.already_save_file:
+            return
+        answer = self.save_or_not_dialog()
         if answer == QMessageBox.Save:
             self.save_file()
         elif answer == QMessageBox.Cancel:
@@ -347,7 +474,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         dialog.button(QMessageBox.Yes).setText("确定")
         dialog.exec_()
     
-    #
     def show_help_dialog(self):
         # with open("./dialog/help.html") as f:
         # 	about_text = f.read()
@@ -362,10 +488,20 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         # text = f"{self.current_index + 1} / {self.data_size}"
         text = f"/ {self.data_size}"
         self.label_total_length.setText(text)
+        self.spinBox_current_index.blockSignals(True)
         self.spinBox_current_index.setRange(1, self.data_size)
         self.spinBox_current_index.setValue(self.current_index + 1)
+        self.spinBox_current_index.blockSignals(False)
     
-    #
+    def reset_progress(self):
+        print("reset_progress")
+        text = "/ 0"
+        self.label_total_length.setText(text)
+        self.spinBox_current_index.blockSignals(True)
+        self.spinBox_current_index.setRange(0, self.data_size)
+        self.spinBox_current_index.setValue(0)
+        self.spinBox_current_index.blockSignals(False)
+    
     def search(self):
         key = self.lineEdit_search.text().strip()
         if key is None or key == "":
@@ -375,14 +511,23 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.textBrowser_passage.setText(passage_new)
     
     def jump_to_target_page(self):
-        # print(self.spinBox_current_index.value())
-        self.current_index = self.spinBox_current_index.value() - 1
-        self.get_set_ui_from_source()
+        try:
+            print("jump_to_target_page")
+            # print(self.spinBox_current_index.value())
+            self.current_index = self.spinBox_current_index.value() - 1
+            self.get_set_ui_from_source()
+        except:
+            print(traceback.format_exc())
     
     def save_fanyi_data(self):
         print("save_fanyi_data")
+        fanyi_data = {}
+        if os.path.exists("./translate_map_content_fanyi.json"):
+            with open(self.FANYI_FILE_PATH, "r", encoding="utf-8") as f:
+                fanyi_data = json.load(f)
+        fanyi_data.update(self.translate_map_content_fanyi)
         with open(self.FANYI_FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(self.translate_map_content_fanyi, f)
+            json.dump(fanyi_data, f)
         # print(self.translate_map_content_fanyi)
     
     def read_fanyi_data(self):
@@ -402,15 +547,71 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                     index = int(self.get_data_from_excel(tag))
                     if index < 0 or index > self.COMBOBOX_MAX_INDEX:
                         index = 0
+                config[f'comboBox_{tag}'].blockSignals(True)
                 config[f'comboBox_{tag}'].setCurrentIndex(index)
+                config[f'comboBox_{tag}'].blockSignals(False)
         except:
             print(traceback.format_exc())
     
-    def change_comboBox(self, tag):
+    def reset_comboBox(self):
+        print('reset_comboBox')
         try:
+            config = vars(self)
+            for tag in self.COMBOBOX_TAGS:
+                config[f'comboBox_{tag}'].blockSignals(True)
+                config[f'comboBox_{tag}'].setCurrentIndex(0)
+                config[f'comboBox_{tag}'].blockSignals(False)
+        except:
+            print(traceback.format_exc())
+    
+    def reset_textBrowser_or_other(self):
+        print("reset_textBrowser_or_other")
+        self.textBrowser_passage.setText("")
+        self.textBrowser_answer.setText("")
+        self.textBrowser_prediction.setText("")
+        self.lineEdit_search.setText("")
+        self.label_id.setText("")
+        self.label_source.setText("")
+    
+    def change_comboBox(self, tag):
+        print("change_comboBox")
+        try:
+            self.already_save_file = False
+            self.set_window_title()
             config = vars(self)
             print(tag, config[f'comboBox_{tag}'].currentIndex())
             self.excel_data.loc[self.current_index, tag] = config[f'comboBox_{tag}'].currentIndex()
             # print(self.excel_data.loc[self.current_index, :])
         except:
             print(traceback.format_exc())
+    
+    # 预翻译所有文章，问题、答案，这样可以拿到结果后，供后面所有人使用
+    def prefanyi(self):
+        if not self.file_path:
+            return
+        self.disable_or_enable_components(True)
+        # 用来存储需要翻译的所有数据
+        all_data = []
+        for index in range(self.data_size):
+            for tag in self.TAGS:
+                all_data.append(self.get_data_from_excel(tag, index))
+        tmp_data = set(all_data)
+        all_data = []
+        for data in tmp_data:
+            if self.translate_map_content_fanyi.get(data) is None:
+                all_data.append(data)
+        print("总共需要翻译的数据长度为：", len(all_data))
+        char_length = len("".join(all_data))
+        print(char_length)
+        dialog = QMessageBox(QMessageBox.Question, '提示',
+                             f'本次预翻译，共{len(all_data)}条数据，总字符为{char_length}。\n预翻译将会一次性翻译完打开文档中的所有英文文本，会消耗大量api翻译额度，可能会占用较长时间，是否继续？',
+                             QMessageBox.Yes | QMessageBox.No)
+        dialog.setWindowIcon(QIcon(":/icons/logo_wk.ico"))
+        # dialog.setIconPixmap(QPixmap())
+        dialog.button(QMessageBox.Yes).setText("确定")
+        dialog.button(QMessageBox.No).setText("取消")
+        answer = dialog.exec_()
+        if answer == QMessageBox.Yes:
+            pass
+        
+        self.disable_or_enable_components(False)

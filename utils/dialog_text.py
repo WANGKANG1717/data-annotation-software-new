@@ -17,7 +17,7 @@ DIALOG_ABOUT_HTML = '''
             <li>邮箱：1686617586@qq.com</li>
             <li>介绍：数据标注软件_new</li>
             <li>博客：<a href="https://121.41.110.43">点我</a></li>
-            <li>项目地址：<a href="git@gitee.com:purify_wang/data-annotation-software-new.git">点我</a></li>
+            <li>项目地址：<a href="https://gitee.com/purify_wang/data-annotation-software-new">点我</a></li>
         </ul>
         Copyright 2023 WANGKANG, All Rights Reserved.<br/>
         <br/>

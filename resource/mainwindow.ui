@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>860</width>
-    <height>600</height>
+    <width>866</width>
+    <height>632</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -772,7 +772,7 @@ QSpinBox::up-button,QSpinBox::down-button
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>860</width>
+     <width>866</width>
      <height>22</height>
     </rect>
    </property>
@@ -781,6 +781,7 @@ QSpinBox::up-button,QSpinBox::down-button
      <string>文件</string>
     </property>
     <addaction name="action_open"/>
+    <addaction name="action_close"/>
     <addaction name="action_save"/>
     <addaction name="action_saveAs"/>
     <addaction name="action_prefanyi"/>
@@ -870,6 +871,18 @@ QSpinBox::up-button,QSpinBox::down-button
    </property>
    <property name="text">
     <string>预翻译</string>
+   </property>
+  </action>
+  <action name="action_close">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/close.png</normaloff>:/icons/close.png</iconset>
+   </property>
+   <property name="text">
+    <string>关闭</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
    </property>
   </action>
  </widget>

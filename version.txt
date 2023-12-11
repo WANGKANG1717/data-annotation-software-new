@@ -1,0 +1,35 @@
+# UTF-8
+VSVersionInfo(
+    ffi=FixedFileInfo(
+        # filevers和prodvers应该始终是包含四个项的元组：（1、2、3、4）,将不需要的项设置为0
+        filevers=(1, 0, 0, 0),  # 文件版本，鼠标悬浮exe会显示，也显示在 详细信息-文件版本, 这个是检测版本的依据
+        prodvers=(1, 0, 0, 0),  # 生产商，未见显示在哪里
+        mask=0x3F,  # 两个位掩码
+        flags=0x0,
+        OS=0x4,  # 为其设计此文件的操作系统,0x4-NT，无需更改它
+        fileType=0x1,  # 文件的常规类型，0x1-该文件是一个应用程序
+        subtype=0x0,  # 文件的功能，0x0表示该文件类型未定义
+        date=(0, 0),  # 创建日期和时间戳
+    ),
+    kids=[
+        StringFileInfo(
+            [
+                StringTable(
+                    "040904B0",
+                    [
+                        StringStruct("CompanyName", "WANGKANG"),  # 鼠标悬浮exe会显示
+                        StringStruct("FileDescription", "数据标注软件_new"),  # 文件说明，鼠标悬浮exe会显示，也会显示在 详细信息-文件说明
+                        StringStruct("FileVersion", "1.0.0"),  # 未见哪里显示
+                        StringStruct("InternalName", "WANGKANG"),
+                        StringStruct("LegalCopyright", "Copyright 2023 WANGKANG,All Rights Reserved."),  # 版权，会显示在 详细信息-版权
+                        StringStruct("OriginalFilename", "数据标注软件_new.exe"),  # 原始文件名，会显示在 详细信息-原始文件名
+                        StringStruct("ProductName", "数据标注软件_new"),  # 产品名称，会显示在 详细信息-产品名称
+                        StringStruct("ProductVersion", "1.0.0"),  # 产品版本，会显示在 详细信息-产品版本
+                    ],
+                )
+            ]
+        ),
+        VarFileInfo([VarStruct("Translation", [2052, 1200])]),  # 语言，中文简体
+        # VarFileInfo([VarStruct("Translation", [1033, 1200])]),  # 英文
+    ],
+)

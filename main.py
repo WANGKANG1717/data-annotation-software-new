@@ -10,8 +10,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from utils.MyWindow import MainWindow
+# 避免openpyxl模块打包不全的问题
+from openpyxl import *
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()

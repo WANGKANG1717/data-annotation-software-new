@@ -10,5 +10,6 @@
         <file>./icons/prefanyi.png</file>
 <!--        <file>./icons/logo.ico</file>-->
         <file>./icons/logo_wk.ico</file>
+        <file>./icons/close.png</file>
     </qresource>
 </RCC>
